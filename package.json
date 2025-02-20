@@ -1,10 +1,13 @@
 {
   "name": "s84_funniest_coding_fails",
   "version": "1.0.0",
-  "description":"Welcome to funniest coding fails",
+  "description": "Welcome to funniest coding fails",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^6.13.0"
+  }
 }
