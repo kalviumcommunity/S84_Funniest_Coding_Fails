@@ -1,0 +1,10 @@
+{
+  "method": "PUT",
+  "url": "http://localhost:3001/api/data/1",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "key": "new value"
+  }
+}
