@@ -1,6 +1,6 @@
-import express from "express";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 
 dotenv.config();
 const router = express.Router();
@@ -17,6 +17,7 @@ const FunniestSchema = new mongoose.Schema({
 
 const Funniest = mongoose.model("Funniest", FunniestSchema);
 
+// Create
 router.post("/funniest", async (req, res) => {
   try {
     const funniest = new Funniest(req.body);
@@ -26,6 +27,8 @@ router.post("/funniest", async (req, res) => {
     res.status(500).send(error);
   }
 });
+
+// Read
 router.get("/funniest", async (req, res) => {
   try {
     const funniest = await Funniest.find();
