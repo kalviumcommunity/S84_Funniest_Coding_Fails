@@ -1,35 +1,27 @@
 const express = require("express");
 const { MongoClient } = require("mongodb");
+
 require("dotenv").config();
 
 const app = express();
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const port = process.env.PORT || 3000;
 
-let dbConnectionStatus = "Not connected";
+const routes = require("./routes");
+app.use("/api", routes);
 
-client.connect((err) => {
-  if (err) {
-    dbConnectionStatus = "Failed to connect";
-    console.error(err);
-  } else {
-    dbConnectionStatus = "Connected";
-    console.log("Connected to MongoDB");
-  }
+app.get("/ping", (req, res) => {
+  res.send("pong");
 });
 
 app.get("/", (req, res) => {
-  res.send(`Database connection status: ${dbConnectionStatus}`);
+  res.send(`go to /ping`);
 });
 
-app.get("/ping", (req, res) => {
-  res.send("Pong");
-});
-
-const port = 3000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+app
+  .listen(port, () => {
+    console.log(`Server is running on port http://localhost:${port}`);
+  })
+  .on("error", (err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });

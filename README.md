@@ -6,6 +6,8 @@ Welcome to **S84_Funniest_Coding_Fails**! This repository is a collection of hil
 
 - [Introduction](#introduction)
 - [Examples](#examples)
+- [Setup](#setup)
+- [Running the Server](#running-the-server)
 - [Contributing](#contributing)
 
 ## Introduction
@@ -30,3 +32,39 @@ Here are a few examples of the hilarious fails you'll find in this repository:
 while True:
     print("I’m stuck in an infinite loop!")
 ```
+
+## Setup
+
+To set up the project, follow these steps:
+
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/yourusername/S84_Funniest_Coding_Fails.git
+   ```
+2. Navigate to the project directory:
+   ```sh
+   cd S84_Funniest_Coding_Fails
+   ```
+3. Install the dependencies:
+   ```sh
+   npm install
+   ```
+
+## Running the Server
+
+To run the server, use the following command:
+
+```sh
+npm start
+```
+
+The server will start on `http://localhost:3001`.
+
+## Troubleshooting
+
+If you encounter issues connecting to MongoDB, try the following steps:
+
+1. **Check MongoDB URI**: Ensure the MongoDB URI in the `.env` file is correct and the credentials are valid.
+2. **Network Access**: Ensure your IP address is whitelisted in the MongoDB Atlas network access settings.
+3. **Database Name**: Ensure the database name in the URI is correct.
+4. **Logs**: Check the server logs for detailed error messages.
