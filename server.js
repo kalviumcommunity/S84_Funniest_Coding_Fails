@@ -10,7 +10,7 @@ const routes = require("./routes");
 app.use("/api", routes);
 
 app.get("/ping", (req, res) => {
-  res.send("pong");
+  res.json({message:"pong"});
 });
 
 app.get("/", (req, res) => {
