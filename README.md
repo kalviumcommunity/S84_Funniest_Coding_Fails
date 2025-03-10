@@ -8,6 +8,7 @@ Welcome to **S84_Funniest_Coding_Fails**! This repository is a collection of hil
 - [Examples](#examples)
 - [Setup](#setup)
 - [Running the Server](#running-the-server)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 
 ## Introduction
@@ -30,7 +31,7 @@ Here are a few examples of the hilarious fails you'll find in this repository:
 
 ```python
 while True:
-    print("I’m stuck in an infinite loop!")
+   print("I’m stuck in an infinite loop!")
 ```
 
 ## Setup
@@ -68,3 +69,9 @@ If you encounter issues connecting to MongoDB, try the following steps:
 2. **Network Access**: Ensure your IP address is whitelisted in the MongoDB Atlas network access settings.
 3. **Database Name**: Ensure the database name in the URI is correct.
 4. **Logs**: Check the server logs for detailed error messages.
+
+## Contributing
+
+We welcome contributions! If you have a funny coding fail to share, please fork the repository, create a new branch, and submit a pull request. Let's spread the laughter together!
+
+# Cloudflare link: [https://asap84.pages.dev/](https://asap84.pages.dev/)
