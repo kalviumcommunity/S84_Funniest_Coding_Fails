@@ -1,12 +1,10 @@
-
 import './App.css';
 import CodingFail from "./CodingFail";
 
 function App() {
-  const dummyData=[
+  const dummyData = [
     { title: 'Infinite Loop Disaster', description: 'while True: print("I’m stuck in an infinite loop!")' },
     { title: 'Null Pointer Exception', description: 'Object reference not set to an instance of an object.' },
-  
   ];
 
   return (
@@ -23,11 +21,10 @@ function App() {
           </p>
         </section>
         <section>
-        <h2>Funny Coding Fails </h2>
-        {dummyData.map((fail, index)=>{
-          <CodingFail key={index} title ={fail.title} description={fail.description} />
-
-        })}
+          <h2>Funny Coding Fails</h2>
+          {dummyData.map((fail, index) => (
+            <CodingFail key={index} title={fail.title} description={fail.description} />
+          ))}
         </section>
       </main>
     </>
