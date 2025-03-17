@@ -1,12 +1,23 @@
 
 import './App.css';
 import CodingFail from "./CodingFail";
+import { useEffect,useState } from 'react';
+import axios from 'axios';
+
 
 function App() {
-  const dummyData = [
-    { title: 'Infinite Loop Disaster', description: 'while True: print("I’m stuck in an infinite loop!")' },
-    { title: 'Null Pointer Exception', description: 'Object reference not set to an instance of an object.' },
-  ];
+  const [codingFails,setCodingFails]=useState([]);
+  useEffect(()=>{
+    axios.get('http://localhost:5000/coding-fails')
+    .then(response =>{
+      setCodingFails(response.data);
+
+    })
+    .catch(error=>{
+      console.error('Error fetching data:',error);
+
+    });
+  },[]);
 
   return (
     <>
@@ -23,7 +34,7 @@ function App() {
         </section>
         <section>
           <h2>Funny Coding Fails</h2>
-          {dummyData.map((fail, index) => (
+          {codingFails.map((fail, index) => (
             <CodingFail key={index} title={fail.title} description={fail.description} />
           ))}
         </section>
