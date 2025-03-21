@@ -11,8 +11,9 @@ mongoose
   .catch((error) => console.error("Failed to connect to Database:", error));
 
 const FunniestSchema = new mongoose.Schema({
-  name: String,
-  description: String,
+  name:{type: String, required:true},
+  description: {type:String,required:true},
+  author:{type:String,default:"Anonyums"},
 });
 
 const Funniest = mongoose.model("Funniest", FunniestSchema);
