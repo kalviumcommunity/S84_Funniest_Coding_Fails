@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import CodingFail from '../components/CodeFailCard';
 
 function Home() {
@@ -23,6 +24,12 @@ function Home() {
       <header className="bg-red-600 text-blue p-10">
         <h1 className="text-6xl font-bold">Welcome to S84 Funniest Coding Fails</h1>
         <p className="mt-2">Your go-to place for hilarious coding moments!</p>
+        <Link
+          to="/add"
+          className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Add a New Coding Fail
+        </Link>
       </header>
       <main className="p-6">
         <section className="mb-8">
