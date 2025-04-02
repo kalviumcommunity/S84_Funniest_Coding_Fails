@@ -8,8 +8,12 @@ function Home() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    fetchCodingFails();
+  }, []);
+
+  const fetchCodingFails = () => {
     axios
-      .get('http://localhost:3000/api/funniest') // Fetch data from backend
+      .get('http://localhost:3000/api/funniest')
       .then((response) => {
         setCodingFails(response.data);
       })
@@ -17,7 +21,17 @@ function Home() {
         console.error('Error fetching data:', error);
         setError('Failed to load coding fails. Please try again later.');
       });
-  }, []);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:3000/api/funniest/${id}`);
+      fetchCodingFails(); // Refresh the list after deletion
+    } catch (err) {
+      console.error('Error deleting entity:', err);
+      setError('Failed to delete entity. Please try again.');
+    }
+  };
 
   return (
     <>
@@ -42,13 +56,28 @@ function Home() {
           <h2 className="text-6xl font-semibold">Funny Coding Fails</h2>
           {error && <p className="text-red-500">{error}</p>}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {codingFails.map((fail, index) => (
-              <CodingFail
-                key={index}
-                title={fail.name}
-                description={fail.description}
-                author={fail.author}
-              />
+            {codingFails.map((fail) => (
+              <div key={fail._id} className="relative">
+                <CodingFail
+                  title={fail.name}
+                  description={fail.description}
+                  author={fail.author}
+                />
+                <div className="absolute top-2 right-2 flex gap-2">
+                  <Link
+                    to={`/update/${fail._id}`}
+                    className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(fail._id)}
+                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </section>
