@@ -13,11 +13,12 @@ function UpdateEntity() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch the existing entity data
     axios
       .get(`http://localhost:3000/api/funniest/${id}`)
       .then((response) => {
-        setFormData(response.data);
+        const { name, description, author } = response.data; // Extract only required fields
+        setFormData({ name, description, author });
+        setError(null); // Clear error on success
       })
       .catch((err) => {
         console.error('Error fetching entity:', err);
@@ -34,6 +35,7 @@ function UpdateEntity() {
     e.preventDefault();
     try {
       await axios.put(`http://localhost:3000/api/funniest/${id}`, formData);
+      setError(null); // Clear error on success
       navigate('/'); // Redirect to the homepage after successful update
     } catch (err) {
       console.error('Error updating entity:', err);

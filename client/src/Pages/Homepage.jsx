@@ -16,6 +16,7 @@ function Home() {
       .get('http://localhost:3000/api/funniest')
       .then((response) => {
         setCodingFails(response.data);
+        setError(null); // Clear error on success
       })
       .catch((error) => {
         console.error('Error fetching data:', error);
@@ -27,6 +28,7 @@ function Home() {
     try {
       await axios.delete(`http://localhost:3000/api/funniest/${id}`);
       fetchCodingFails(); // Refresh the list after deletion
+      setError(null); // Clear error on success
     } catch (err) {
       console.error('Error deleting entity:', err);
       setError('Failed to delete entity. Please try again.');
@@ -55,6 +57,9 @@ function Home() {
         <section>
           <h2 className="text-6xl font-semibold">Funny Coding Fails</h2>
           {error && <p className="text-red-500">{error}</p>}
+          {codingFails.length === 0 && !error && (
+            <p className="text-gray-500">No coding fails found. Add a new one!</p>
+          )}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {codingFails.map((fail) => (
               <div key={fail._id} className="relative">
