@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
+const { body, validationResult } = require("express-validator"); // Import express-validator
 
 dotenv.config();
 const router = express.Router();
@@ -11,23 +12,36 @@ mongoose
   .catch((error) => console.error("Failed to connect to Database:", error));
 
 const FunniestSchema = new mongoose.Schema({
-  name:{type: String, required:true},
-  description: {type:String,required:true},
-  author:{type:String,default:"Anonyums"},
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  author: { type: String, default: "Anonymous" },
 });
 
 const Funniest = mongoose.model("Funniest", FunniestSchema);
 
 // Create
-router.post("/funniest", async (req, res) => {
-  try {
-    const funniest = new Funniest(req.body);
-    const result = await funniest.save();
-    res.status(201).send(result);
-  } catch (error) {
-    res.status(500).send(error);
+router.post(
+  "/funniest",
+  [
+    body("name").notEmpty().withMessage("Name is required"), // Validate name
+    body("description").notEmpty().withMessage("Description is required"), // Validate description
+    body("author").optional().isString().withMessage("Author must be a string"), // Validate author (optional)
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() }); // Return validation errors
+    }
+
+    try {
+      const funniest = new Funniest(req.body);
+      const result = await funniest.save();
+      res.status(201).send(result);
+    } catch (error) {
+      res.status(500).send(error);
+    }
   }
-});
+);
 
 // Read
 router.get("/funniest", async (req, res) => {
