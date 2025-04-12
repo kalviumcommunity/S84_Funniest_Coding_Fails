@@ -1,88 +1,122 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const dotenv = require("dotenv");
-const { body, validationResult } = require("express-validator"); // Import express-validator
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-dotenv.config();
-const router = express.Router();
+function AddEntity() {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    author: '',
+    created_by: '', // Add created_by field
+  });
+  const [users, setUsers] = useState([]); // State to store users for dropdown
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to Database"))
-  .catch((error) => console.error("Failed to connect to Database:", error));
+  // Fetch users for the dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/users'); // Fetch users from backend
+        setUsers(response.data);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users. Please try again.');
+      }
+    };
+    fetchUsers();
+  }, []);
 
-const FunniestSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  author: { type: String, default: "Anonymous" },
-});
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
-const Funniest = mongoose.model("Funniest", FunniestSchema);
-
-
-router.use((req, res, next) => {
-  if (req.method === "POST" || req.method === "PUT") {
-    if (req.headers["content-type"] !== "application/json") {
-      return res.status(400).json({ error: "Content-Type must be application/json" });
-    }
-  }
-  next();
-});
-
-// Create
-router.post(
-  "/funniest",
-  [
-    body("name").notEmpty().withMessage("Name is required"), // Validate name
-    body("description").notEmpty().withMessage("Description is required"), // Validate description
-    body("author").optional().isString().withMessage("Author must be a string"), // Validate author (optional)
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() }); // Return validation errors
-    }
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      const funniest = new Funniest(req.body);
-      const result = await funniest.save();
-      res.status(201).send(result);
-    } catch (error) {
-      res.status(500).send(error);
+      await axios.post('http://localhost:3000/api/funniest', formData); // Send formData including created_by
+      navigate('/'); // Redirect to the homepage after successful submission
+    } catch (err) {
+      console.error('Error adding entity:', err);
+      setError('Failed to add entity. Please try again.');
     }
-  }
-);
+  };
 
-// Read
-router.get("/funniest", async (req, res) => {
-  try {
-    const funniest = await Funniest.find();
-    res.status(200).send(funniest);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
+  return (
+    <div className="p-6">
+      <h1 className="text-4xl font-bold mb-6">Add a New Coding Fail</h1>
+      {error && <p className="text-red-500 mb-4">{error}</p>}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-lg font-medium mb-2" htmlFor="name">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-lg font-medium mb-2" htmlFor="description">
+            Description
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-lg font-medium mb-2" htmlFor="author">
+            Author
+          </label>
+          <input
+            type="text"
+            id="author"
+            name="author"
+            value={formData.author}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+          />
+        </div>
+        <div>
+          <label className="block text-lg font-medium mb-2" htmlFor="created_by">
+            Created By
+          </label>
+          <select
+            id="created_by"
+            name="created_by"
+            value={formData.created_by}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
+          >
+            <option value="">Select a User</option>
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Add Coding Fail
+        </button>
+      </form>
+    </div>
+  );
+}
 
-// Update
-router.put("/funniest/:id", async (req, res) => {
-  try {
-    const result = await Funniest.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    res.status(200).send(result);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-// Delete
-router.delete("/funniest/:id", async (req, res) => {
-  try {
-    const result = await Funniest.findByIdAndDelete(req.params.id);
-    res.status(200).send(result);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-module.exports = router;
+export default AddEntity;

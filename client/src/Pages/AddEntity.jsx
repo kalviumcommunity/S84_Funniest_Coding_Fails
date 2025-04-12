@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,9 +7,25 @@ function AddEntity() {
     name: '',
     description: '',
     author: '',
+    created_by: '', // Add created_by field
   });
+  const [users, setUsers] = useState([]); // State to store users for dropdown
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  // Fetch users for the dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get('http://localhost:3000/api/users'); // Fetch users from backend
+        setUsers(response.data);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Failed to load users. Please try again.');
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,7 +35,7 @@ function AddEntity() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3000/api/funniest', formData);
+      await axios.post('http://localhost:3000/api/funniest', formData); // Send formData including created_by
       navigate('/'); // Redirect to the homepage after successful submission
     } catch (err) {
       console.error('Error adding entity:', err);
@@ -71,6 +87,26 @@ function AddEntity() {
             onChange={handleChange}
             className="w-full p-2 border border-gray-300 rounded"
           />
+        </div>
+        <div>
+          <label className="block text-lg font-medium mb-2" htmlFor="created_by">
+            Created By
+          </label>
+          <select
+            id="created_by"
+            name="created_by"
+            value={formData.created_by}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded"
+            required
+          >
+            <option value="">Select a User</option>
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
         </div>
         <button
           type="submit"
