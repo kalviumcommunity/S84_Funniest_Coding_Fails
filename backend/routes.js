@@ -1,122 +1,177 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+const express = require("express");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const { body, validationResult } = require("express-validator");
 
-function AddEntity() {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    author: '',
-    created_by: '', // Add created_by field
-  });
-  const [users, setUsers] = useState([]); // State to store users for dropdown
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+dotenv.config();
+const router = express.Router();
 
-  // Fetch users for the dropdown
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await axios.get('http://localhost:3000/api/users'); // Fetch users from backend
-        setUsers(response.data);
-      } catch (err) {
-        console.error('Error fetching users:', err);
-        setError('Failed to load users. Please try again.');
-      }
-    };
-    fetchUsers();
-  }, []);
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Connected to Database"))
+  .catch((error) => console.error("Failed to connect to Database:", error));
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
+// Define the User schema
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+});
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post('http://localhost:3000/api/funniest', formData); // Send formData including created_by
-      navigate('/'); // Redirect to the homepage after successful submission
-    } catch (err) {
-      console.error('Error adding entity:', err);
-      setError('Failed to add entity. Please try again.');
+const User = mongoose.model("User", UserSchema);
+
+// Define the Funniest schema
+const FunniestSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  author: { type: String, default: "Anonymous" },
+  created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Reference to User
+});
+
+const Funniest = mongoose.model("Funniest", FunniestSchema);
+
+// Middleware to validate Content-Type
+router.use((req, res, next) => {
+  if (req.method === "POST" || req.method === "PUT") {
+    if (req.headers["content-type"] !== "application/json") {
+      return res.status(400).json({ error: "Content-Type must be application/json" });
     }
-  };
+  }
+  next();
+});
 
-  return (
-    <div className="p-6">
-      <h1 className="text-4xl font-bold mb-6">Add a New Coding Fail</h1>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-lg font-medium mb-2" htmlFor="name">
-            Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-lg font-medium mb-2" htmlFor="description">
-            Description
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-lg font-medium mb-2" htmlFor="author">
-            Author
-          </label>
-          <input
-            type="text"
-            id="author"
-            name="author"
-            value={formData.author}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-        </div>
-        <div>
-          <label className="block text-lg font-medium mb-2" htmlFor="created_by">
-            Created By
-          </label>
-          <select
-            id="created_by"
-            name="created_by"
-            value={formData.created_by}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-            required
-          >
-            <option value="">Select a User</option>
-            {users.map((user) => (
-              <option key={user._id} value={user._id}>
-                {user.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Add Coding Fail
-        </button>
-      </form>
-    </div>
-  );
-}
+// Fetch all users
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).send(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).send({ error: "Failed to fetch users" });
+  }
+});
+// Create a new user
+router.post(
+  "/users",
+  [
+    body("name").notEmpty().withMessage("Name is required"),
+    body("email").isEmail().withMessage("Valid email is required"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Validation failed. Check the input fields.",
+        errors: errors.array(),
+      });
+    }
 
-export default AddEntity;
+    try {
+      const user = new User(req.body);
+      const result = await user.save();
+      res.status(201).send(result);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).send({ error: "Failed to create user" });
+    }
+  }
+);
+
+
+
+// Fetch all entities
+router.get("/funniest", async (req, res) => {
+  try {
+    const funniest = await Funniest.find().populate("created_by", "name");
+    res.status(200).send(funniest);
+  } catch (error) {
+    console.error("Error fetching entities:", error);
+    res.status(500).send({ error: "Failed to fetch entities" });
+  }
+});
+
+// Fetch entities by created_by
+router.get("/funniest/user/:userId", async (req, res) => {
+  try {
+    const entities = await Funniest.find({ created_by: req.params.userId }).populate("created_by", "name");
+    res.status(200).send(entities);
+  } catch (error) {
+    console.error("Error fetching entities by user:", error);
+    res.status(500).send({ error: "Failed to fetch entities by user" });
+  }
+});
+
+// Create a new entity
+router.post(
+  "/funniest",
+  [
+    body("name").notEmpty().withMessage("Name is required"),
+    body("description").notEmpty().withMessage("Description is required"),
+    body("author").optional().isString().withMessage("Author must be a string"),
+    body("created_by").notEmpty().withMessage("Created_by is required"), // Validate created_by
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Validation failed. Check the input fields.",
+        errors: errors.array(),
+      });
+    }
+
+    try {
+      const funniest = new Funniest(req.body);
+      const result = await funniest.save();
+      res.status(201).send(result);
+    } catch (error) {
+      console.error("Error creating entity:", error);
+      res.status(500).send({ error: "Failed to create entity" });
+    }
+  }
+);
+
+// Update an entity
+router.put(
+  "/funniest/:id",
+  [
+    body("name").optional().isString().withMessage("Name must be a string"),
+    body("description").optional().isString().withMessage("Description must be a string"),
+    body("author").optional().isString().withMessage("Author must be a string"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        message: "Validation failed. Check the input fields.",
+        errors: errors.array(),
+      });
+    }
+
+    try {
+      const result = await Funniest.findByIdAndUpdate(req.params.id, req.body, { new: true });
+      if (!result) {
+        return res.status(404).json({ error: "Entity not found" });
+      }
+      res.status(200).send(result);
+    } catch (error) {
+      console.error("Error updating entity:", error);
+      res.status(500).send({ error: "Failed to update entity" });
+    }
+  }
+);
+
+// Delete an entity
+router.delete("/funniest/:id", async (req, res) => {
+  try {
+    const result = await Funniest.findByIdAndDelete(req.params.id);
+    if (!result) {
+      return res.status(404).json({ error: "Entity not found" });
+    }
+    res.status(200).json({ message: "Entity deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting entity:", error);
+    res.status(500).send({ error: "Failed to delete entity" });
+  }
+});
+
+module.exports = router;

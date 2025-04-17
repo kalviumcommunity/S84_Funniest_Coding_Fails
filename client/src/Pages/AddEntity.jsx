@@ -11,6 +11,7 @@ function AddEntity() {
   });
   const [users, setUsers] = useState([]); // State to store users for dropdown
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // State to track form submission
   const navigate = useNavigate();
 
   // Fetch users for the dropdown
@@ -34,12 +35,23 @@ function AddEntity() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate that a user is selected
+    if (!formData.created_by) {
+      setError('Please select a user.');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await axios.post('http://localhost:3000/api/funniest', formData); // Send formData including created_by
+      setError(null); // Clear error on success
       navigate('/'); // Redirect to the homepage after successful submission
     } catch (err) {
       console.error('Error adding entity:', err);
       setError('Failed to add entity. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -111,8 +123,9 @@ function AddEntity() {
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          disabled={isSubmitting}
         >
-          Add Coding Fail
+          {isSubmitting ? 'Submitting...' : 'Add Coding Fail'}
         </button>
       </form>
     </div>
