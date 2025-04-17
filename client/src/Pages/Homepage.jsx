@@ -5,34 +5,42 @@ import CodingFail from '../components/CodeFailCard';
 
 function Home() {
   const [codingFails, setCodingFails] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState('');
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    fetchUsers();
     fetchCodingFails();
   }, []);
 
-  const fetchCodingFails = () => {
-    axios
-      .get('http://localhost:3000/api/funniest')
-      .then((response) => {
-        setCodingFails(response.data);
-        setError(null); // Clear error on success
-      })
-      .catch((error) => {
-        console.error('Error fetching data:', error);
-        setError('Failed to load coding fails. Please try again later.');
-      });
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
   };
 
-  const handleDelete = async (id) => {
+  const fetchCodingFails = async (userId) => {
     try {
-      await axios.delete(`http://localhost:3000/api/funniest/${id}`);
-      fetchCodingFails(); // Refresh the list after deletion
-      setError(null); // Clear error on success
-    } catch (err) {
-      console.error('Error deleting entity:', err);
-      setError('Failed to delete entity. Please try again.');
+      const url = userId
+        ? `http://localhost:3000/api/funniest/user/${userId}`
+        : 'http://localhost:3000/api/funniest';
+      const response = await axios.get(url);
+      setCodingFails(response.data);
+      setError(null);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Failed to load coding fails. Please try again later.');
     }
+  };
+
+  const handleUserChange = (e) => {
+    const userId = e.target.value;
+    setSelectedUser(userId);
+    fetchCodingFails(userId);
   };
 
   return (
@@ -46,14 +54,26 @@ function Home() {
         >
           Add a New Coding Fail
         </Link>
+        <div className="mt-4">
+          <label htmlFor="userFilter" className="block text-lg font-medium mb-2">
+            Filter by User:
+          </label>
+          <select
+            id="userFilter"
+            value={selectedUser}
+            onChange={handleUserChange}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value="">All Users</option>
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
       <main className="p-6">
-        <section className="mb-8">
-          <h2 className="text-2xl font-semibold">About Our Project</h2>
-          <p className="mt-4">
-            This project is a collection of the funniest and most relatable coding fails. Whether you're a beginner or a seasoned developer, you'll find something to laugh about here.
-          </p>
-        </section>
         <section>
           <h2 className="text-6xl font-semibold">Funny Coding Fails</h2>
           {error && <p className="text-red-500">{error}</p>}
@@ -62,27 +82,12 @@ function Home() {
           )}
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {codingFails.map((fail) => (
-              <div key={fail._id} className="relative">
-                <CodingFail
-                  title={fail.name}
-                  description={fail.description}
-                  author={fail.author}
-                />
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <Link
-                    to={`/update/${fail._id}`}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(fail._id)}
-                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+              <CodingFail
+                key={fail._id}
+                title={fail.name}
+                description={fail.description}
+                author={fail.author}
+              />
             ))}
           </div>
         </section>
