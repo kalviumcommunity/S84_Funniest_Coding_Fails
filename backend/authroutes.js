@@ -1,16 +1,23 @@
 const express = require("express");
 const { body, validationResult } = require("express-validator");
-const db = require("./db.js"); // Import MySQL connection
+const jwt = require("jsonwebtoken"); // 1. Import jsonwebtoken
+const db = require("./db.js");
+require("dotenv").config(); // Ensure .env variables are loaded
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET; // 2. Get secret from environment
+
+if (!JWT_SECRET) {
+  console.error("FATAL ERROR: JWT_SECRET is not defined in .env file.");
+  process.exit(1); // Exit if secret is missing
+}
 
 // --- Login Endpoint ---
 router.post(
   "/login",
   [
     body("email").isEmail().withMessage("Valid email is required"),
-    // IMPORTANT: In a real app, you'd validate the password here too.
-    // We are skipping password validation for this simplified example.
+    // Skipping password validation for this example
   ],
   (req, res) => {
     const errors = validationResult(req);
@@ -18,10 +25,8 @@ router.post(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email /*, password */ } = req.body; // Password received but not used for validation here
+    const { email /*, password */ } = req.body;
 
-    // --- SIMULATED LOGIN ---
-    // Find user by email. In a real app, you'd also compare hashed passwords.
     db.query(
       "SELECT id, name, email FROM users WHERE email = ?",
       [email],
@@ -31,29 +36,41 @@ router.post(
           return res.status(500).send({ error: "Server error during login" });
         }
 
-        // Check if user exists (Simulating password check success if user found)
         if (results.length === 0) {
-          return res.status(401).send({ error: "Invalid credentials" }); // User not found
+          return res.status(401).send({ error: "Invalid credentials" });
         }
 
-        // --- Login Successful (User Found) ---
         const user = results[0];
 
-        // Set username cookie
-        // Secure: true should be used in production with HTTPS
-        // HttpOnly: true prevents client-side JavaScript access
-        // SameSite: 'Lax' or 'Strict' helps prevent CSRF
-        res.cookie("username", user.name, {
-          httpOnly: true, // Recommended for security
-          secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-          sameSite: "Lax", // Or 'Strict'
-          maxAge: 24 * 60 * 60 * 1000, // Cookie expires in 1 day (milliseconds)
+        // --- 3. Create JWT ---
+        const payload = {
+          userId: user.id,
+          name: user.name,
+          // Add other non-sensitive info if needed (e.g., roles)
+        };
+
+        // Sign the token
+        const token = jwt.sign(
+          payload,
+          JWT_SECRET,
+          { expiresIn: "1d" } // Token expires in 1 day (e.g., '1h', '7d')
+        );
+
+        // --- 4. Set JWT in Cookie ---
+        // Name the cookie 'token' (or similar) instead of 'username'
+        res.cookie("token", token, {
+          // Store the JWT
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "Lax",
+          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
         });
 
-        // Send success response (optionally include some user info, but not sensitive data)
+        // Send success response (don't need to send user details if token is set)
         res.status(200).send({
           message: "Login successful",
-          user: { id: user.id, name: user.name, email: user.email },
+          // Optionally send back non-sensitive user info for immediate UI update
+          user: { name: user.name },
         });
       }
     );
@@ -62,8 +79,9 @@ router.post(
 
 // --- Logout Endpoint ---
 router.post("/logout", (req, res) => {
-  // Clear the username cookie
-  res.clearCookie("username", {
+  // --- 5. Clear the JWT cookie ---
+  res.clearCookie("token", {
+    // Clear the 'token' cookie
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
@@ -71,15 +89,39 @@ router.post("/logout", (req, res) => {
   res.status(200).send({ message: "Logout successful" });
 });
 
-// --- (Optional) Check Login Status Endpoint ---
-// Useful for frontend to know if a user is logged in
+// --- Check Login Status Endpoint ---
 router.get("/status", (req, res) => {
-  const username = req.cookies.username; // Requires cookie-parser middleware
-  if (username) {
-    // In a real app, you might want to verify this username against the DB
-    res.status(200).send({ loggedIn: true, username: username });
-  } else {
-    res.status(200).send({ loggedIn: false });
+  // --- 6. Read and Verify JWT from Cookie ---
+  const token = req.cookies.token; // Get token from cookie
+
+  if (!token) {
+    return res.status(200).send({ loggedIn: false }); // No token means not logged in
+  }
+
+  try {
+    // Verify the token using the secret
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Token is valid, send back user info from the token payload
+    res.status(200).send({
+      loggedIn: true,
+      user: {
+        // Send back data stored in the token
+        id: decoded.userId,
+        name: decoded.name,
+        // Include other data from payload if needed
+      },
+    });
+  } catch (error) {
+    // Token is invalid or expired
+    console.error("JWT verification failed:", error.message);
+    // Clear the invalid cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+    });
+    return res.status(200).send({ loggedIn: false }); // Treat invalid token as not logged in
   }
 });
 
